@@ -16,19 +16,7 @@ TEMPLATE_PACK = getattr(settings, 'CRISPY_TEMPLATE_PACK', 'bootstrap')
 
 
 def selectively_remove_spaces_between_tags(value, template_pack, form_class):
-    if (
-        'bootstrap' in template_pack
-        and 'form-inline' in form_class
-    ):
-        # Bootstrap inline forms rely on spaces separating inputs, really
-        html = re.sub(r'>\s+<', '> <', force_text(value))
-        html = re.sub(r'</button><', '</button> <', force_text(html))
-        return re.sub(r'/><', r'/> <', force_text(html))
-    else:
-        html = re.sub(r'>\s+<', '><', force_text(value))
-        html = re.sub(r'</button><', '</button> <', force_text(html))
-        return re.sub(r'/><', r'/> <', force_text(html))
-    return value
+    return re.sub(r'>\s+<', r'>\n<', force_text(value))
 selectively_remove_spaces_between_tags = allow_lazy(
     selectively_remove_spaces_between_tags, text_type
 )
