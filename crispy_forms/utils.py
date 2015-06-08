@@ -1,5 +1,4 @@
 from __future__ import with_statement
-import inspect
 import logging
 import sys
 
@@ -8,15 +7,13 @@ from django.forms.forms import BoundField
 from django.template import Context
 from django.template.loader import get_template
 from django.utils.html import conditional_escape
-from django.utils.functional import memoize
 
 from .base import KeepContext
-from .compatibility import text_type, PY2
+from .compatibility import text_type, PY2, memoize
 
 # Global field template, default template used for rendering a field.
 
 TEMPLATE_PACK = getattr(settings, 'CRISPY_TEMPLATE_PACK', 'bootstrap')
-
 
 # By memoizeing we avoid loading the template every time render_field
 # is called without a template
@@ -24,6 +21,16 @@ def default_field_template(template_pack=TEMPLATE_PACK):
     return get_template("%s/field.html" % template_pack)
 default_field_template = memoize(default_field_template, {}, 1)
 
+def set_hidden(widget):
+    '''
+    set widget to hidden
+
+    different starting in Django 1.7, when is_hidden ceases to be a
+    true attribute and is determined by the input_type attribute
+    '''
+    widget.input_type = 'hidden'
+    if not widget.is_hidden:
+        widget.is_hidden = True
 
 def render_field(
     field, form, form_style, context, template=None, labelclass=None,
@@ -87,13 +94,13 @@ def render_field(
                 for index, (widget, attr) in enumerate(zip(widgets, list_attrs)):
                     if hasattr(field_instance.widget, 'widgets'):
                         if 'type' in attr and attr['type'] == "hidden":
-                            field_instance.widget.widgets[index].is_hidden = True
+                            set_hidden(field_instance.widget.widgets[index])
                             field_instance.widget.widgets[index] = field_instance.hidden_widget()
 
                         field_instance.widget.widgets[index].attrs.update(attr)
                     else:
                         if 'type' in attr and attr['type'] == "hidden":
-                            field_instance.widget.is_hidden = True
+                            set_hidden(field_instance.widget)
                             field_instance.widget = field_instance.hidden_widget()
 
                         field_instance.widget.attrs.update(attr)

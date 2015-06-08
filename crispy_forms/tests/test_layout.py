@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import re
 
-import django
+import django, logging, warnings
 from django import forms
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -28,7 +28,6 @@ from crispy_forms.layout import (
     Div, Submit
 )
 from crispy_forms.utils import render_crispy_form
-
 
 class TestFormLayout(CrispyTestCase):
     urls = 'crispy_forms.tests.urls'
@@ -260,15 +259,16 @@ class TestFormLayout(CrispyTestCase):
         )
 
         # Check formset fields
-        django_version = django.get_version()
-        if django_version < '1.5':
+        django_version = django.VERSION[:3]
+        hidden_count = 4  # before Django 1.7 added MIN_NUM_FORM_COUNT
+        if django_version < (1, 5):
             self.assertEqual(html.count(
                 'type="hidden" name="form-TOTAL_FORMS" value="3" id="id_form-TOTAL_FORMS"'
             ), 1)
             self.assertEqual(html.count(
                 'type="hidden" name="form-INITIAL_FORMS" value="0" id="id_form-INITIAL_FORMS"'
             ), 1)
-            if (django_version >= '1.4' and django_version < '1.4.4') or django_version < '1.3.6':
+            if (django_version >= (1, 4) and django_version < (1, 4, 4)) or django_version < (1, 3, 6):
                 self.assertEqual(html.count(
                     'type="hidden" name="form-MAX_NUM_FORMS" id="id_form-MAX_NUM_FORMS"'
                 ), 1)
@@ -286,7 +286,12 @@ class TestFormLayout(CrispyTestCase):
             self.assertEqual(html.count(
                 'id="id_form-MAX_NUM_FORMS" name="form-MAX_NUM_FORMS" type="hidden" value="1000"'
             ), 1)
-        self.assertEqual(html.count("hidden"), 4)
+            if hasattr(forms.formsets, 'MIN_NUM_FORM_COUNT'):
+                self.assertEqual(html.count(
+                    'id="id_form-MIN_NUM_FORMS" name="form-MIN_NUM_FORMS" type="hidden" value="0"'
+                ), 1)
+                hidden_count += 1
+        self.assertEqual(html.count("hidden"), hidden_count)
 
         # Check form structure
         self.assertEqual(html.count('<form'), 1)
@@ -319,15 +324,15 @@ class TestFormLayout(CrispyTestCase):
         self.assertEqual(html.count("id_form-1-id"), 1)
         self.assertEqual(html.count("id_form-2-id"), 1)
 
-        django_version = django.get_version()
-        if django_version < '1.5':
+        django_version = django.VERSION[:3]
+        if django_version < (1, 5):
             self.assertEqual(html.count(
                 'type="hidden" name="form-TOTAL_FORMS" value="3" id="id_form-TOTAL_FORMS"'
             ), 1)
             self.assertEqual(html.count(
                 'type="hidden" name="form-INITIAL_FORMS" value="0" id="id_form-INITIAL_FORMS"'
             ), 1)
-            if (django_version >= '1.4' and django_version < '1.4.4') or django_version < '1.3.6':
+            if (django_version >= (1, 4) and django_version < (1, 4, 4)) or django_version < (1, 3, 6):
                 self.assertEqual(html.count(
                     'type="hidden" name="form-MAX_NUM_FORMS" id="id_form-MAX_NUM_FORMS"'
                 ), 1)
@@ -419,6 +424,9 @@ class TestFormLayout(CrispyTestCase):
 class TestUniformFormLayout(TestFormLayout):
 
     def test_layout_composition(self):
+        if settings.CRISPY_TEMPLATE_PACK != 'uni_form':
+            warnings.warn('skipping uniform tests with CRISPY_TEMPLATE_PACK=%s' % settings.CRISPY_TEMPLATE_PACK)
+            return
         form_helper = FormHelper()
         form_helper.add_layout(
             Layout(
@@ -467,6 +475,9 @@ class TestUniformFormLayout(TestFormLayout):
         self.assertFalse('last_name' in html)
 
     def test_second_layout_multifield_column_buttonholder_submit_div(self):
+        if settings.CRISPY_TEMPLATE_PACK != 'uni_form':
+            warnings.warn('skipping uniform tests with CRISPY_TEMPLATE_PACK=%s' % settings.CRISPY_TEMPLATE_PACK)
+            return
         form_helper = FormHelper()
         form_helper.add_layout(
             Layout(

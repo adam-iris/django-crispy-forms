@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
+import logging, warnings
 from django import forms
-
+from django.conf import settings
 from .base import CrispyTestCase
 from crispy_forms.compatibility import string_types
 from crispy_forms.exceptions import DynamicError
@@ -508,6 +509,9 @@ class TestDynamicLayouts(CrispyTestCase):
 
 class TestUniformDynamicLayouts(TestDynamicLayouts):
     def test_filter(self):
+        if settings.CRISPY_TEMPLATE_PACK != 'uni_form':
+            warnings.warn('skipping uniform tests with CRISPY_TEMPLATE_PACK=%s' % settings.CRISPY_TEMPLATE_PACK)
+            return
         helper = FormHelper()
         helper.layout = Layout(
             Div(
